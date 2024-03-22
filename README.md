@@ -1,1 +1,3 @@
-use vscode to open this project 
+developed this project with vscode
+## SmartDoorBell Android app project link: 
+https://github.com/coryTuyaoqing/SmartDoorBell

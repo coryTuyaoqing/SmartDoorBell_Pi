@@ -6,6 +6,7 @@ from flask import Flask, render_template, send_file, request
 from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO
 import ffmpeg
+from display_audio import * 
 
 
 app = Flask(__name__)
@@ -59,6 +60,9 @@ def upload_file():
         filename = secure_filename(file.filename)
         # Here you should save the file
         file.save('static/upload/' + filename)
+############################################################ todo: test this code
+        play_audio('static/upload/' + filename)
+############################################################        
         return 'upload successfully!'
 
     return 'No file uploaded'

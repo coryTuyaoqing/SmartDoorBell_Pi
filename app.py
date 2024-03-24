@@ -1,9 +1,11 @@
 from gpiozero import Button
+import numpy as np
 from Record_Audio import record_audio
 from DoorLocking import *
 from flask import Flask, render_template, send_file, request
 from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO
+import ffmpeg
 
 
 app = Flask(__name__)
@@ -26,9 +28,15 @@ def download_photo():
 
 @app.route('/download_audio')
 def download_audio():
-    record_audio("audio.wav", 20)
+    #record_audio("audio.wav", 20)
     path = "audio.wav"
     return send_file(path, as_attachment=True)
+
+@app.route('/download_video')
+def download_video():
+    path = "video.mp4"
+    return send_file(path, as_attachment=True)
+    
 
 @app.route('/unlock')
 def lock():
@@ -59,6 +67,40 @@ def upload_file():
 def handle_connect():
     print('Client connected')
 
+# @socketio.on('monitor_request')
+# def handle_monitor_request(message):
+#     print('receive monitor request: ', message)
+
+#     # process = (
+#     #     ffmpeg
+#     #     .input('video.mp4')  # Adjust this path based on your camera device
+#     #     .output('pipe:', format='rawvideo', pix_fmt='rgb24')
+#     #     .run_async(pipe_stdout=True)
+#     # )
+
+#     # while True:
+#     #     frame = process.stdout.read(480, 640, 3)  # Adjust frame size as needed
+        
+#     #     # Convert the raw frame data to a numpy array
+#     #     np_frame = np.frombuffer(frame, np.uint8).reshape(480, 640, 3)
+        
+#     #     # Encode the frame to JPEG format
+#     #     jpeg_frame, _ = (
+#     #         ffmpeg
+#     #         .input('pipe:', format='rawvideo', pix_fmt='rgb24', s='640x480')
+#     #         .output('pipe:', format='mjpeg')
+#     #         .run(input=np_frame.tobytes(), capture_stdout=True)
+#     #     )
+
+#     #     socketio.emit('video_chunk', jpeg_frame)
+
+#     # Open and read the video file
+#     with open('video.mp4', 'rb') as video_file:
+#         while True:
+#             chunk = video_file.read(512)  # Read a chunk of the video file
+#             if not chunk:
+#                 break
+#             socketio.emit('video_chunk', chunk)  # Emit the chunk with the event name 'video_chunk'
 
 
 def detect_input_change():
@@ -84,9 +126,6 @@ def detect_door_open():
     while True: pass
 
 if __name__ == '__main__':
-    # t = Thread(target=detect_input_change)
-    # t.start()
-    # print("thread started.")
     socketio.start_background_task(detect_input_change)
     socketio.start_background_task(detect_door_open)
     socketio.run(host='0.0.0.0', port='80', app=app)

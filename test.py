@@ -10,16 +10,24 @@
 # # while True:
 #     print(GPIO.input(16))
 
-from gpiozero import Button
-from threading import Thread
+# from gpiozero import Button
+# from threading import Thread
 
-button = Button(16)
+# button = Button(16)
 
-def detect_input_change():
-    def input_change():
-        print(button.value)
-    button.when_deactivated = input_change
-    while True: pass
+# def detect_input_change():
+#     def input_change():
+#         print(button.value)
+#     button.when_deactivated = input_change
+#     while True: pass
 
-t = Thread(target=detect_input_change)
-t.start()
+# t = Thread(target=detect_input_change)
+# t.start()
+# from record_video2 import *
+
+# record_video2()
+
+from Record_Audio import *
+
+record_audio("audio.wav", 5)
+

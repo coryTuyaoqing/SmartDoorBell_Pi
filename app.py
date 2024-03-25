@@ -1,3 +1,5 @@
+from threading import Thread
+from time import sleep
 from gpiozero import Button
 import numpy as np
 from Record_Audio import record_audio
@@ -5,14 +7,15 @@ from DoorLocking import *
 from flask import Flask, render_template, send_file, request
 from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO
-import ffmpeg
 from display_audio import * 
+from record_video2 import *
+import cv2
 
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "static/upload/"
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024 #1G
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='threading')
 
 @app.route('/')
 def index():
@@ -29,13 +32,14 @@ def download_photo():
 
 @app.route('/download_audio')
 def download_audio():
-    #record_audio("audio.wav", 20)
+    target=record_audio("audio.wav", 15)
     path = "audio.wav"
     return send_file(path, as_attachment=True)
 
 @app.route('/download_video')
 def download_video():
-    path = "video.mp4"
+    record_video2("video.avi", 15)
+    path = "video.avi"
     return send_file(path, as_attachment=True)
     
 
@@ -60,9 +64,7 @@ def upload_file():
         filename = secure_filename(file.filename)
         # Here you should save the file
         file.save('static/upload/' + filename)
-############################################################ todo: test this code
-        play_audio('static/upload/' + filename)
-############################################################        
+        play_audio('static/upload/', filename)     
         return 'upload successfully!'
 
     return 'No file uploaded'
@@ -71,40 +73,9 @@ def upload_file():
 def handle_connect():
     print('Client connected')
 
-# @socketio.on('monitor_request')
-# def handle_monitor_request(message):
-#     print('receive monitor request: ', message)
-
-#     # process = (
-#     #     ffmpeg
-#     #     .input('video.mp4')  # Adjust this path based on your camera device
-#     #     .output('pipe:', format='rawvideo', pix_fmt='rgb24')
-#     #     .run_async(pipe_stdout=True)
-#     # )
-
-#     # while True:
-#     #     frame = process.stdout.read(480, 640, 3)  # Adjust frame size as needed
-        
-#     #     # Convert the raw frame data to a numpy array
-#     #     np_frame = np.frombuffer(frame, np.uint8).reshape(480, 640, 3)
-        
-#     #     # Encode the frame to JPEG format
-#     #     jpeg_frame, _ = (
-#     #         ffmpeg
-#     #         .input('pipe:', format='rawvideo', pix_fmt='rgb24', s='640x480')
-#     #         .output('pipe:', format='mjpeg')
-#     #         .run(input=np_frame.tobytes(), capture_stdout=True)
-#     #     )
-
-#     #     socketio.emit('video_chunk', jpeg_frame)
-
-#     # Open and read the video file
-#     with open('video.mp4', 'rb') as video_file:
-#         while True:
-#             chunk = video_file.read(512)  # Read a chunk of the video file
-#             if not chunk:
-#                 break
-#             socketio.emit('video_chunk', chunk)  # Emit the chunk with the event name 'video_chunk'
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('client disconnect')
 
 
 def detect_input_change():
@@ -113,7 +84,6 @@ def detect_input_change():
         print("Some one is at the door!")
         socketio.send("Some one is at the door!")
     button.when_activated = input_change
-    while True: pass
 
 def detect_door_open():
     def door_open():
@@ -127,11 +97,16 @@ def detect_door_open():
 
     magnet.when_activated = door_open
     magnet.when_deactivated = door_close
-    while True: pass
+
 
 if __name__ == '__main__':
     socketio.start_background_task(detect_input_change)
     socketio.start_background_task(detect_door_open)
+    # t1 = Thread(target=detect_input_change)
+    # t2 = Thread(target=detect_door_open)
+    # t1.start()
+    # t2.start()
+
     socketio.run(host='0.0.0.0', port='80', app=app)
 
 
